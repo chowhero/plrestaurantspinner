@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>餐廳轉盤 · 隨機揀食</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --card: #1a1a22;
+      --card-hover: #22222c;
+      --accent: #ff6b35;
+      --accent2: #f7c948;
+      --text: #f0f0f5;
+      --muted: #8a8a9a;
+      --success: #2ecc71;
+      --border: #2a2a35;
+      --low: #3498db;
+      --mid: #2ecc71;
+      --high: #f39c12;
+      --higher: #e74c3c;
+      --highest: #9b59b6;
+      --na: #7f8c8d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(ellipse at 20% 20%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(247, 201, 72, 0.06) 0%, transparent 50%);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-top: 12px;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
+
+    /* Filters */
+    .filters {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .filter-section {
+      margin-bottom: 20px;
+    }
+
+    .filter-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .filter-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-title span {
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      appearance: none;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      user-select: none;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      background: rgba(255, 107, 53, 0.1);
+    }
+
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.35);
+    }
+
+    .chip.price-low.active { background: var(--low); border-color: var(--low); box-shadow: 0 4px 12px rgba(52,152,219,0.35); }
+    .chip.price-mid.active { background: var(--mid); border-color: var(--mid); box-shadow: 0 4px 12px rgba(46,204,113,0.35); }
+    .chip.price-high.active { background: var(--high); border-color: var(--high); box-shadow: 0 4px 12px rgba(243,156,18,0.35); }
+    .chip.price-higher.active { background: var(--higher); border-color: var(--higher); box-shadow: 0 4px 12px rgba(231,76,60,0.35); }
+    .chip.price-highest.active { background: var(--highest); border-color: var(--highest); box-shadow: 0 4px 12px rgba(155,89,182,0.35); }
+    .chip.price-na.active { background: var(--na); border-color: var(--na); box-shadow: 0 4px 12px rgba(127,140,141,0.35); }
+
+    .price-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .price-legend span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Main spinner area */
+    .spinner-area {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 800px) {
+      .spinner-area {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .wheel-card, .result-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wheel-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      margin: 0 auto;
+      aspect-ratio: 1;
+    }
+
+    #wheelCanvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: 0 0 0 8px #2a2a35, 0 0 40px rgba(255,107,53,0.15);
+    }
+
+    .pointer {
+      position: absolute;
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 28px solid var(--accent);
+      z-index: 10;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+
+    .spin-btn {
+      display: block;
+      width: 100%;
+      max-width: 280px;
+      margin: 24px auto 0;
+      padding: 16px 32px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: inherit;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), #ff8c5a);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 6px 24px rgba(255,107,53,0.4);
+      letter-spacing: 0.03em;
+    }
+
+    .spin-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(255,107,53,0.5);
+    }
+
+    .spin-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .spin-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .count-info {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .count-info strong {
+      color: var(--accent2);
+    }
+
+    /* Result */
+    .result-placeholder {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    .result-placeholder .icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .result-content {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .result-content.show {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-name {
+      font-size: 1.8rem;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+
+    .result-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .badge.mall {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+    }
+
+    .badge.price-low { background: rgba(52,152,219,0.2); color: #5dade2; }
+    .badge.price-mid { background: rgba(46,204,113,0.2); color: #58d68d; }
+    .badge.price-high { background: rgba(243,156,18,0.2); color: #f5b041; }
+    .badge.price-higher { background: rgba(231,76,60,0.2); color: #ec7063; }
+    .badge.price-highest { background: rgba(155,89,182,0.2); color: #bb8fce; }
+    .badge.price-na { background: rgba(127,140,141,0.2); color: #b0b0b0; }
+
+    .result-desc {
+      background: rgba(255,255,255,0.04);
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.6;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .result-desc:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: var(--border);
+    }
+
+    .result-desc .hint {
+      font-size: 0.75rem;
+      margin-top: 6px;
+      opacity: 0.6;
+    }
+
+    /* List of filtered */
+    .list-section {
+      margin-top: 32px;
+    }
+
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .list-header h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .restaurant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .resto-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .resto-card:hover {
+      background: var(--card-hover);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .resto-card .name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+    }
+
+    .resto-card .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .resto-card .tag {
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      padding: 20px;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 420px;
+      width: 100%;
+      transform: scale(0.92);
+      transition: transform 0.25s;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal-overlay.open .modal {
+      transform: scale(1);
+    }
+
+    .modal h3 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .modal .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .modal .desc {
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 0.95rem;
+      background: rgba(255,255,255,0.04);
+      padding: 14px;
+      border-radius: 12px;
+    }
+
+    .modal-close {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .modal-close:hover {
+      opacity: 0.9;
+    }
+
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      top: -10px;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>餐廳轉盤</h1>
+      <p>揀商場 · 揀價錢 · 轉一轉 </p>
+    </header>
+
+    <div class="filters">
+      <div class="filter-section">
+        <div class="filter-title">商場 <span id="mallCount">0</span></div>
+        <div class="chips" id="mallChips"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-title">價錢範圍 <span id="priceCount">0</span></div>
+        <div class="chips" id="priceChips"></div>
+        <div class="price-legend">
+          <span><i class="dot" style="background:var(--low)"></i> Low $30-49</span>
+          <span><i class="dot" style="background:var(--mid)"></i> Mid $50-59</span>
+          <span><i class="dot" style="background:var(--high)"></i> High $60-69</span>
+          <span><i class="dot" style="background:var(--higher)"></i> Higher $70-79</span>
+          <span><i class="dot" style="background:var(--highest)"></i> Highest $80+</span>
+          <span><i class="dot" style="background:var(--na)"></i> N/A 未標示</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="spinner-area">
+      <div class="wheel-card">
+        <div class="wheel-wrapper">
+          <div class="pointer"></div>
+          <canvas id="wheelCanvas" width="400" height="400"></canvas>
+        </div>
+        <button class="spin-btn" id="spinBtn">轉一轉！</button>
+        <div class="count-info">而家有 <strong id="filteredCount">0</strong> 間餐廳可以轉</div>
+      </div>
+
+      <div class="result-card">
+        <div class="result-placeholder" id="resultPlaceholder">
+          <div class="icon">🎲</div>
+          <div>撳下面「轉一轉」開始<br>結果會顯示喺度</div>
+        </div>
+        <div class="result-content" id="resultContent">
+          <div class="result-name" id="resultName"></div>
+          <div class="result-meta" id="resultMeta"></div>
+          <div class="result-desc" id="resultDesc" onclick="openModalFromResult()">
+            <div id="resultDescText"></div>
+            <div class="hint">詳情...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-section">
+      <div class="list-header">
+        <h2>符合條件嘅餐廳</h2>
+      </div>
+      <div class="restaurant-grid" id="restoGrid"></div>
+    </div>
+
+    <footer>完全隨機 · 冇預設 </footer>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3 id="modalName"></h3>
+      <div class="meta" id="modalMeta"></div>
+      <div class="desc" id="modalDesc"></div>
+      <button class="modal-close" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+
+  <script>
+    // ========== DATA ==========
+    const PRICE_MAP = {
+      Low: { label: 'Low $30-49', key: 'low', range: '$30-49' },
+      Mid: { label: 'Mid $50-59', key: 'mid', range: '$50-59' },
+      High: { label: 'High $60-69', key: 'high', range: '$60-69' },
+      Higher: { label: 'Higher $70-79', key: 'higher', range: '$70-79' },
+      Highest: { label: 'Highest $80+', key: 'highest', range: '$80+' },
+      'N/A': { label: 'N/A 未標示', key: 'na', range: 'N/A' }
+    };
+
+    const restaurants = [
+      // 新都城中心一期
+      { name: '雲桂香', mall: '新都城中心一期', price: 'Low', desc: 'No description yet.' },
+      { name: '米線陣', mall: '新都城中心一期', price: 'Low', desc: 'No description yet.' },
+      { name: '海港酒家', mall: '新都城中心一期', price: 'Higher', desc: 'No description yet.' },
+      { name: '大快活', mall: '新都城中心一期', price: 'Low', desc: 'No description yet.' },
+      { name: '蒲羅', mall: '新都城中心一期', price: 'Low', desc: 'No description yet.' },
+      { name: '吉野家', mall: '新都城中心一期', price: 'Low', desc: 'No description yet.' },
+      { name: '袁記雲餃', mall: '新都城中心一期', price: 'Low', desc: 'No description yet.' },
+      { name: '一粥麵', mall: '新都城中心一期', price: 'Low', desc: 'No description yet.' },
+
+      // 新都城中心二期
+      { name: 'SUKIYA', mall: '新都城中心二期', price: 'Low', desc: 'No description yet.' },
+      { name: '丸龜製麵', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '元氣壽司', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '三代目', mall: '新都城中心二期', price: 'Highest', desc: 'No description yet.' },
+      { name: '一橋拉麵', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: '八方台式麵屋', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '台灣馬祖', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: '亞參雞', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: 'Hungry Korean', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: '沙嗲王', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: 'Ruby Tuesday', mall: '新都城中心二期', price: 'Higher', desc: 'No description yet.' },
+      { name: 'Pizza Hut', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: 'Jacomax', mall: '新都城中心二期', price: 'Higher', desc: 'No description yet.' },
+      { name: '意樂', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '薩莉亞', mall: '新都城中心二期', price: 'Low', desc: 'No description yet.' },
+      { name: "Oliver'super sandwich", mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '添好運', mall: '新都城中心二期', price: 'Highest', desc: 'No description yet.' },
+      { name: '餃掂', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '稻香', mall: '新都城中心二期', price: 'Highest', desc: 'No description yet.' },
+      { name: '玖子茶', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: '翠園', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '譚仔三哥', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '南記粉麵', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '蘇哥清湯腩', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '源記粉麵', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '敏華冰廳', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: '太興', mall: '新都城中心二期', price: 'High', desc: 'No description yet.' },
+      { name: 'KFC', mall: '新都城中心二期', price: 'Low', desc: 'No description yet.' },
+      { name: 'Jollibee', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '六十年華', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '搵食工房', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '唐記包點', mall: '新都城中心二期', price: 'Low', desc: 'No description yet.' },
+      { name: '滿記甜品', mall: '新都城中心二期', price: 'Low', desc: 'No description yet.' },
+      { name: '華御結', mall: '新都城中心二期', price: 'Low', desc: 'No description yet.' },
+      { name: '椰林閣', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+      { name: '安南越式牛肉粉', mall: '新都城中心二期', price: 'Mid', desc: 'No description yet.' },
+
+      // 新都城中心三期
+      { name: '壽司郎', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: '將軍會館', mall: '新都城中心三期', price: 'Higher', desc: 'No description yet.' },
+      { name: '金鳳大餐廳', mall: '新都城中心三期', price: 'Higher', desc: 'No description yet.' },
+      { name: '陳鵬鵬', mall: '新都城中心三期', price: 'Higher', desc: 'No description yet.' },
+      { name: '元朗冰室', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: '一粹', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: '大師傅粥品', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: '小方糖甜品', mall: '新都城中心三期', price: 'Low', desc: 'No description yet.' },
+      { name: 'MX', mall: '新都城中心三期', price: 'Low', desc: 'No description yet.' },
+      { name: '小魚鴨子', mall: '新都城中心三期', price: 'High', desc: 'No description yet.' },
+      { name: '譚仔雲南', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: 'Pacific Coffee', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: '樂園魚旦', mall: '新都城中心三期', price: 'Low', desc: 'No description yet.' },
+      { name: '華御結', mall: '新都城中心三期', price: 'Low', desc: 'No description yet.' },
+      { name: '韓樂', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: '茶泰', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+      { name: '竇', mall: '新都城中心三期', price: 'Higher', desc: 'No description yet.' },
+      { name: '鳴虎拉麵', mall: '新都城中心三期', price: 'Mid', desc: 'No description yet.' },
+
+      // 慧安商場
+      { name: '私伙', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '印度野', mall: '慧安商場', price: 'Higher', desc: 'No description yet.' },
+      { name: '良記', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '喜信美食屋', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '越之味', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '意八餐廳', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '芝味鳥', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '心香好食味', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '小寶車仔麵', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '寶園打冷小廚', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+      { name: '財記茶餐廳', mall: '慧安商場', price: 'N/A', desc: 'No description yet.' },
+
+      // 寶林市場、景林街市及周邊
+      { name: '景林炒麵佬', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '牛奶冰室', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '哥哥炸雞', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: 'The Vigor', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '1011 SIPTEA', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: 'RICCO', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '泰之味', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '荷里活雞鍋', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '桃園製作', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '新興昌', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '德昌魚蛋粉', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '炳記車仔麵', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '金利來', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '茂發茶餐廳', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '順德經典', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '新界佬', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '祥榮燒味', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '點點心思', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+      { name: '榮基牛雜', mall: '寶林市場、景林街市及周邊', price: 'N/A', desc: 'No description yet.' },
+    ];
+
+    const MALLS = [...new Set(restaurants.map(r => r.mall))];
+    const PRICES = ['Low', 'Mid', 'High', 'Higher', 'Highest', 'N/A'];
+
+    // State
+    let selectedMalls = new Set(MALLS);
+    let selectedPrices = new Set(PRICES);
+    let filtered = [];
+    let isSpinning = false;
+    let currentAngle = 0;
+    let selectedResult = null;
+
+    // Colors for wheel segments
+    const WHEEL_COLORS = [
+      '#ff6b35', '#f7c948', '#2ecc71', '#3498db', '#9b59b6',
+      '#e74c3c', '#1abc9c', '#e67e22', '#34495e', '#16a085',
+      '#c0392b', '#8e44ad', '#27ae60', '#2980b9', '#f39c12'
+    ];
+
+    // ========== INIT ==========
+    function init() {
+      renderMallChips();
+      renderPriceChips();
+      updateFilter();
+      document.getElementById('spinBtn').addEventListener('click', spin);
+    }
+
+    function renderMallChips() {
+      const container = document.getElementById('mallChips');
+      container.innerHTML = '';
+      MALLS.forEach(mall => {
+        const btn = document.createElement('button');
+        btn.className = 'chip active';
+        btn.textContent = mall;
+        btn.dataset.value = mall;
+        btn.onclick = () => toggleMall(mall, btn);
+        container.appendChild(btn);
+      });
+      // All button
+      const allBtn = document.createElement('button');
+      allBtn.className = 'chip active';
+      allBtn.textContent = '全部';
+      allBtn.style.fontWeight = '700';
+      allBtn.onclick = () => {
+        selectedMalls = new Set(MALLS);
+        document.querySelectorAll('#mallChips .chip').forEach(c => c.classList.add('active'));
+        updateFilter();
+      };
+      container.prepend(allBtn);
+      updateMallCount();
+    }
+
+    function renderPriceChips() {
+      const container = document.getElementById('priceChips');
+      container.innerHTML = '';
+      PRICES.forEach(p => {
+        const info = PRICE_MAP[p];
+        const btn = document.createElement('button');
+        btn.className = `chip price-${info.key} active`;
+        btn.textContent = info.label;
+        btn.dataset.value = p;
+        btn.onclick = () => togglePrice(p, btn);
+        container.appendChild(btn);
+      });
+      updatePriceCount();
+    }
+
+    function toggleMall(mall, btn) {
+      if (selectedMalls.has(mall)) {
+        selectedMalls.delete(mall);
+        btn.classList.remove('active');
+      } else {
+        selectedMalls.add(mall);
+        btn.classList.add('active');
+      }
+      // Sync "全部"
+      const allBtn = document.querySelector('#mallChips .chip');
+      if (selectedMalls.size === MALLS.length) {
+        allBtn.classList.add('active');
+      } else {
+        allBtn.classList.remove('active');
+      }
+      updateFilter();
+    }
+
+    function togglePrice(price, btn) {
+      if (selectedPrices.has(price)) {
+        selectedPrices.delete(price);
+        btn.classList.remove('active');
+      } else {
+        selectedPrices.add(price);
+        btn.classList.add('active');
+      }
+      updateFilter();
+    }
+
+    function updateMallCount() {
+      document.getElementById('mallCount').textContent = selectedMalls.size;
+    }
+
+    function updatePriceCount() {
+      document.getElementById('priceCount').textContent = selectedPrices.size;
+    }
+
+    function updateFilter() {
+      updateMallCount();
+      updatePriceCount();
+      filtered = restaurants.filter(r => 
+        selectedMalls.has(r.mall) && selectedPrices.has(r.price)
+      );
+      document.getElementById('filteredCount').textContent = filtered.length;
+      document.getElementById('spinBtn').disabled = filtered.length === 0;
+      drawWheel();
+      renderList();
+    }
+
+    // ========== WHEEL ==========
+    function drawWheel() {
+      const canvas = document.getElementById('wheelCanvas');
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const center = size / 2;
+      const radius = center - 10;
+
+      ctx.clearRect(0, 0, size, size);
+
+      if (filtered.length === 0) {
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#2a2a35';
+        ctx.fill();
+        ctx.fillStyle = '#8a8a9a';
+        ctx.font = 'bold 22px "Noto Sans TC"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('冇餐廳', center, center);
+        return;
+      }
+
+      const n = filtered.length;
+      const arc = (Math.PI * 2) / n;
+
+      // Apply current rotation
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(currentAngle);
+
+      for (let i = 0; i < n; i++) {
+        const start = i * arc;
+        const end = start + arc;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, start, end);
+        ctx.closePath();
+        ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length];
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Text
+        ctx.save();
+        ctx.rotate(start + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${Math.min(16, Math.max(10, 180 / n))}px "Noto Sans TC"`;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 3;
+        const name = filtered[i].name;
+        const display = name.length > 8 ? name.slice(0, 7) + '…' : name;
+        ctx.fillText(display, radius - 14, 5);
+        ctx.restore();
+      }
+
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(0, 0, 28, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a1a22';
+      ctx.fill();
+      ctx.strokeStyle = varAccent();
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function varAccent() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#ff6b35';
+    }
+
+    // ========== SPIN ==========
+    function spin() {
+      if (isSpinning || filtered.length === 0) return;
+      isSpinning = true;
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('resultPlaceholder').style.display = 'block';
+      document.getElementById('resultContent').classList.remove('show');
+
+      // Fully random index using crypto if available
+      const randomIndex = Math.floor(secureRandom() * filtered.length);
+      const target = filtered[randomIndex];
+
+      const n = filtered.length;
+      const arc = (Math.PI * 2) / n;
+      // Segment i goes from i*arc to (i+1)*arc
+      // We want the middle of the target segment to land under the pointer (top = -PI/2 in canvas after rotation)
+      // After rotation by currentAngle, the angle on wheel that is at top is -PI/2 - currentAngle (mod 2PI)
+      const targetMid = randomIndex * arc + arc / 2;
+      const extraSpins = 6 + Math.floor(secureRandom() * 4); // 6~9 full turns
+      // Normalize current
+      const normalized = ((currentAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      // We need final rotation such that: targetMid + finalAngle ≡ -PI/2  (mod 2PI)
+      // => finalAngle ≡ -PI/2 - targetMid  (mod 2PI)
+      let delta = (-Math.PI / 2 - targetMid) - normalized;
+      delta = ((delta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const finalAngle = currentAngle + delta + extraSpins * Math.PI * 2;
+
+      const startAngle = currentAngle;
+      const start = performance.now();
+      const duration = 4200 + Math.random() * 800;
+
+      function animate(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+        currentAngle = startAngle + (finalAngle - startAngle) * eased;
+        drawWheel();
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          currentAngle = finalAngle;
+          drawWheel();
+          showResult(target);
+          isSpinning = false;
+          document.getElementById('spinBtn').disabled = filtered.length === 0;
+          launchConfetti();
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function secureRandom() {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const arr = new Uint32Array(1);
+        window.crypto.getRandomValues(arr);
+        return arr[0] / (0xffffffff + 1);
+      }
+      return Math.random();
+    }
+
+    function showResult(resto) {
+      selectedResult = resto;
+      document.getElementById('resultPlaceholder').style.display = 'none';
+      const content = document.getElementById('resultContent');
+      content.classList.add('show');
+      document.getElementById('resultName').textContent = resto.name;
+      const meta = document.getElementById('resultMeta');
+      const pInfo = PRICE_MAP[resto.price];
+      meta.innerHTML = `
+        <span class="badge mall">${resto.mall}</span>
+        <span class="badge price-${pInfo.key}">${pInfo.label}</span>
+      `;
+      document.getElementById('resultDescText').textContent = resto.desc;
+    }
+
+    // ========== LIST ==========
+    function renderList() {
+      const grid = document.getElementById('restoGrid');
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div style="color:var(--muted);padding:20px;grid-column:1/-1;text-align:center;">冇符合條件嘅餐廳，試下改下 filter 啦～</div>';
+        return;
+      }
+      grid.innerHTML = filtered.map((r, i) => {
+        const p = PRICE_MAP[r.price];
+        return `
+          <div class="resto-card" onclick="openModal(${i})">
+            <div class="name">${r.name}</div>
+            <div class="tags">
+              <span class="tag">${r.mall}</span>
+              <span class="tag" style="background:rgba(255,255,255,0.1)">${p.label}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========== MODAL ==========
+    function openModal(index) {
+      const r = filtered[index];
+      if (!r) return;
+      selectedResult = r;
+      showModal(r);
+    }
+
+    function openModalFromResult() {
+      if (selectedResult) showModal(selectedResult);
+    }
+
+    function showModal(r) {
+      const p = PRICE_MAP[r.price];
+      document.getElementById('modalName').textContent = r.name;
+      document.getElementById('modalMeta').innerHTML = `
+        <span class="badge mall">${r.mall}</span>
+        <span class="badge price-${p.key}">${p.label}</span>
+      `;
+      document.getElementById('modalDesc').textContent = r.desc;
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal(e) {
+      if (e && e.target !== document.getElementById('modal') && !e.target.classList.contains('modal-close')) return;
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    // ========== CONFETTI ==========
+    function launchConfetti() {
+      const colors = ['#ff6b35', '#f7c948', '#2ecc71', '#3498db', '#9b59b6', '#e74c3c'];
+      for (let i = 0; i < 60; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.width = (6 + Math.random() * 8) + 'px';
+        el.style.height = (6 + Math.random() * 8) + 'px';
+        el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        el.style.opacity = '0.9';
+        document.body.appendChild(el);
+        const duration = 2000 + Math.random() * 2000;
+        const xMove = (Math.random() - 0.5) * 200;
+        el.animate([
+          { transform: 'translateY(0) translateX(0) rotate(0deg)', opacity: 1 },
+          { transform: `translateY(100vh) translateX(${xMove}px) rotate(${Math.random()*720}deg)`, opacity: 0 }
+        ], { duration, easing: 'cubic-bezier(0.25,0.46,0.45,0.94)' }).onfinish = () => el.remove();
+      }
+    }
+
+    // Close modal on Escape
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.getElementById('modal').classList.remove('open');
+    });
+
+    init();
+  </script>
+</body>
+</html>
